@@ -13,9 +13,9 @@ const prompt =
   "Job Title: {jobTitle} , Depends on job title give me list of  summery for 3 experience level, Mid Level and Freasher level in 3 -4 lines in array format, With summery and experience_level Field in JSON Format";
 function Summary({ resumeInfo, enanbledNext, enanbledPrev }) {
   const dispatch = useDispatch();
-  const [loading, setLoading] = useState(false); // Declare the undeclared variable using useState
-  const [summary, setSummary] = useState(resumeInfo?.summary || ""); // Declare the undeclared variable using useState
-  const [aiGeneratedSummeryList, setAiGenerateSummeryList] = useState(null); // Declare the undeclared variable using useState
+  const [loading, setLoading] = useState(false);
+  const [summary, setSummary] = useState(resumeInfo?.summary || "");
+  const [aiGeneratedSummeryList, setAiGenerateSummeryList] = useState([]); // Initialize as an empty array
   const { resume_id } = useParams();
 
   const handleInputChange = (e) => {
@@ -51,7 +51,7 @@ function Summary({ resumeInfo, enanbledNext, enanbledPrev }) {
           setLoading(false);
         });
     }
-  }; // Declare the undeclared variable using useState
+  };
 
   const setSummery = (summary) => {
     dispatch(
@@ -74,12 +74,39 @@ function Summary({ resumeInfo, enanbledNext, enanbledPrev }) {
     const PROMPT = prompt.replace("{jobTitle}", resumeInfo?.jobTitle);
     try {
       const result = await AIChatSession.sendMessage(PROMPT);
-      console.log(JSON.parse(result.response.text()));
-      setAiGenerateSummeryList(JSON.parse(result.response.text()));
-      toast("Summery Generated", "success");
+      const responseText = result.response.text();
+      console.log("AI Response:", responseText);
+      
+      // Parse the response and ensure it's an array
+      let parsedData;
+      try {
+        parsedData = JSON.parse(responseText);
+        
+        // Check if parsedData is an array, if not, try to extract an array property
+        if (!Array.isArray(parsedData)) {
+          // If it's an object with an array property
+          const possibleArrayProps = Object.values(parsedData).filter(Array.isArray);
+          if (possibleArrayProps.length > 0) {
+            parsedData = possibleArrayProps[0];
+          } else {
+            // If no array found, convert to array if it's an object with required fields
+            if (parsedData.summary && parsedData.experience_level) {
+              parsedData = [parsedData];
+            } else {
+              throw new Error("Invalid response format");
+            }
+          }
+        }
+        
+        setAiGenerateSummeryList(parsedData);
+        toast("Summary Generated", "success");
+      } catch (parseError) {
+        console.error("Error parsing AI response:", parseError);
+        toast("Error parsing AI response", "error");
+      }
     } catch (error) {
       console.log(error);
-      toast("${error.message}", `${error.message}`);
+      toast("Error", `${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -93,7 +120,7 @@ function Summary({ resumeInfo, enanbledNext, enanbledPrev }) {
 
         <form className="mt-7" onSubmit={onSave}>
           <div className="flex justify-between items-end">
-            <label>Add Summery</label>
+            <label>Add Summary</label>
             <Button
               variant="outline"
               onClick={() => GenerateSummeryFromAI()}
@@ -119,10 +146,10 @@ function Summary({ resumeInfo, enanbledNext, enanbledPrev }) {
         </form>
       </div>
 
-      {aiGeneratedSummeryList && (
+      {aiGeneratedSummeryList && aiGeneratedSummeryList.length > 0 && (
         <div className="my-5">
           <h2 className="font-bold text-lg">Suggestions</h2>
-          {aiGeneratedSummeryList?.map((item, index) => (
+          {aiGeneratedSummeryList.map((item, index) => (
             <div
               key={index}
               onClick={() => {

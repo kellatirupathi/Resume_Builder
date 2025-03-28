@@ -1,8 +1,8 @@
-import { Outlet, useNavigate } from "react-router-dom";
+// In src/App.jsx
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import Header from "./components/custom/Header";
 import { Toaster } from "./components/ui/sonner";
-import { useDispatch } from "react-redux";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux"; // Added useSelector import
 import { useEffect } from "react";
 import { addUserData } from "./features/user/userFeatures";
 import { startUser } from "./Services/login";
@@ -11,8 +11,12 @@ import { Provider } from "react-redux";
 
 function App() {
   const navigate = useNavigate();
+  const location = useLocation(); // Get current location
   const user = useSelector((state) => state.editUser.userData);
   const dispatch = useDispatch();
+
+  // Check if current path includes edit-resume
+  const isEditResumePage = location.pathname.includes('/dashboard/edit-resume');
 
   useEffect(() => {
     const fetchResponse = async () => {
@@ -38,7 +42,7 @@ function App() {
   return (
     <>
       <Provider store={resumeStore}>
-        <Header user={user} />
+        {!isEditResumePage && <Header user={user} />}
         <Outlet />
         <Toaster />
       </Provider>

@@ -14,7 +14,7 @@ function PreviewPage() {
   }, [resumeData]);
   return (
     <div
-      className={`shadow-lg h-full p-14 border-t-[20px]`}
+      className={`shadow-lg h-full p-14 border-t-[0.5px]`}
       style={{
         borderColor: resumeData?.themeColor ? resumeData.themeColor : "#000000",
       }}
